@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { fetchArticles } from '@/lib/github';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import ScrollToContentButton from '@/components/scroll-to-content-button';
+import { checkAccessAndRedirect } from '@/lib/supabase/utils';
 
 // ビルド時に動的なページを生成
 export async function generateStaticParams() {
@@ -29,6 +31,10 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         </Link>
       </div>
     );
+  }
+
+  if (post.isPaid) {
+    await checkAccessAndRedirect(post.id, 'article');
   }
 
   return (
@@ -65,16 +71,33 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
                     : `¥${post.price.toLocaleString()}`}
                 </div>
               </div>
-              <Button size='lg' className='w-full sm:w-auto px-12'>
-                {post.price > 0 ? '購入する' : '無料で読む'}
-              </Button>
+              {post.price > 0 ? (
+                <ScrollToContentButton
+                  targetId='article'
+                  size='lg'
+                  className='w-full sm:w-auto px-12'
+                >
+                  読み始める
+                </ScrollToContentButton>
+              ) : (
+                <ScrollToContentButton
+                  targetId='article'
+                  size='lg'
+                  className='w-full sm:w-auto px-12'
+                >
+                  無料で読む
+                </ScrollToContentButton>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* コンテンツエリア */}
-      <article className='container mx-auto px-4 py-16 max-w-4xl'>
+      <article
+        id='article'
+        className='container mx-auto px-4 py-16 max-w-4xl scroll-mt-20'
+      >
         <div className='flex justify-center mb-12'>
           <div className='flex items-center justify-center w-24 h-24 rounded-full bg-slate-100'>
             <span className='text-5xl'>{post.emoji || '📝'}</span>

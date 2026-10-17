@@ -4,6 +4,9 @@ import { notFound } from 'next/navigation';
 import { fetchBooks, fetchBook } from '@/lib/github';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import PurchaseButton from '@/components/purchase-button';
+import { auth } from '@/auth';
+import { checkUserPurchase } from '@/lib/supabase/utils';
 
 export async function generateStaticParams() {
   const books = await fetchBooks();
@@ -14,21 +17,37 @@ export async function generateStaticParams() {
 
 interface BookPageProps {
   params: Promise<{ bookSlug: string }>;
+  searchParams: Promise<{ success?: string }>;
 }
 
-export default async function BookPage({ params }: BookPageProps) {
+export default async function BookPage({ params, searchParams }: BookPageProps) {
   const { bookSlug } = await params;
+  const { success } = await searchParams;
   const book = await fetchBook(bookSlug);
 
   if (!book) {
     notFound();
   }
 
+  const session = await auth();
+  const hasPurchased =
+    !!session?.user?.id &&
+    book.price > 0 &&
+    (await checkUserPurchase(String(session.user.id), book.id));
+  const firstChapter = book.chapters?.[0];
+  const canRead = book.price === 0 || hasPurchased;
+
   return (
     <main className='min-h-screen bg-white'>
       {/* ヒーローエリア */}
       <div className='w-full bg-slate-50 py-16 md:py-24'>
         <div className='container mx-auto px-4 max-w-5xl'>
+          {success === 'true' && hasPurchased && (
+            <div className='mb-8 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800'>
+              購入が完了しました。下の目次から読み始められます。
+            </div>
+          )}
+
           <div className='flex flex-col md:flex-row gap-8 md:gap-12'>
             <div className='w-full md:w-1/3 max-w-[300px] mx-auto md:mx-0'>
               <div className='relative aspect-[3/4] rounded-lg overflow-hidden shadow-lg'>
@@ -52,6 +71,7 @@ export default async function BookPage({ params }: BookPageProps) {
                       {tag}
                     </Badge>
                   ))}
+                  {hasPurchased && <Badge>購入済み</Badge>}
                 </div>
                 <h1 className='text-4xl md:text-5xl font-bold tracking-tight'>
                   {book.title}
@@ -74,12 +94,30 @@ export default async function BookPage({ params }: BookPageProps) {
             <div>
               <div className='text-lg font-semibold'>価格</div>
               <div className='text-3xl font-bold mb-2'>
-                {book.price === 0 ? '無料' : `¥${book.price.toLocaleString()}`}
+                {book.price === 0
+                  ? '無料'
+                  : hasPurchased
+                    ? '購入済み'
+                    : `¥${book.price.toLocaleString()}`}
               </div>
             </div>
-            <Button size='lg' className='w-full sm:w-auto px-12'>
-              {book.price > 0 ? '購入する' : '無料で読む'}
-            </Button>
+
+            {canRead && firstChapter ? (
+              <Button asChild size='lg' className='w-full sm:w-auto px-12'>
+                <Link href={`/books/${bookSlug}/${firstChapter.slug}`}>
+                  {book.price === 0 ? '無料で読む' : '読み始める'}
+                </Link>
+              </Button>
+            ) : book.price > 0 ? (
+              <PurchaseButton
+                contentId={book.id}
+                contentType='book'
+                price={book.price}
+                title={book.title}
+                size='lg'
+                className='w-full sm:w-auto px-12'
+              />
+            ) : null}
           </div>
         </div>
       </div>

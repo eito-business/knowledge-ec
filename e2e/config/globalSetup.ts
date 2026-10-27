@@ -24,3 +24,4 @@ export default async function globalConfig() {
   await context.storageState({ path: storagePath });
   await browser.close();
 }
+

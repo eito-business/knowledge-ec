@@ -39,7 +39,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     jwt({ token, profile, user }) {
       // 初回サインイン時にprofileからtokenにデータをコピー
       if (user && profile) {
-        token.id = user.id ?? profile.id.toString();
+        if (user.id != null) {
+          token.id = user.id;
+        } else if (profile.id != null) {
+          token.id = String(profile.id);
+        }
       }
       return token;
     },

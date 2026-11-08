@@ -29,6 +29,14 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Supabase Free Plan Keep-Alive
+
+When deployed to Vercel, the schedule in `vercel.json` calls `/api/cron/supabase-keepalive` once a day. The endpoint runs a lightweight read against the `purchases` table. No additional GitHub Actions secrets, repository variables, or cron-specific environment variables are required; the deployment must already have the Supabase environment variables used by the app.
+
+The schedule is set for 18:00 UTC (03:00 JST). Vercel Hobby runs daily cron jobs with up to 59 minutes of timing variance. Cron jobs run on production deployments only.
+
+This periodic request may help keep a Free Plan project active, but Supabase does not guarantee that it will prevent a project from being paused for inactivity. Upgrade to a paid plan if uninterrupted availability is required.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
